@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use rudi::AbstractModule;
 
 
@@ -19,11 +21,18 @@ impl Hello for HelloWorld {
         "hello world".into()
     }
 }
+
+fn new_hello( a : Arc<String>, b : Arc<u32> ) -> Arc<dyn Hello> {
+    Arc::new(HelloWorld{})
+}
+
 impl AbstractModule for HelloModule {
     fn config( binder : &mut rudi::Binder ) {
-        binder.bind::<Box<dyn Hello>>().to_provider(|i| {
-            Box::new(HelloWorld{})
+        binder.bind::<Arc<dyn Hello>>().to_provider(|i| {
+            Arc::new(HelloWorld{})
         });
+
+        binder.bind::<Arc<dyn Hello>>().to_constructor(new_hello);
     }
 } 
 

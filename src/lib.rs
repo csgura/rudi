@@ -44,11 +44,18 @@ where
 
 }
 
-trait Constructor<A,R> {
-    fn new(&self, injector :Injector) -> R;
+pub trait Constructor<A,R> {
+    fn new(&self, injector : &Injector) -> R;
 }
 
+// impl<A,T,C> Provider for C where 
+// C : Constructor<A,T> {
+//     type ProvidedType = T;
 
+//     fn provide(&self,  injector : &Injector ) -> Self::ProvidedType {
+//         self(injector)
+//     }
+// }
 
 macro_rules! impl_handler {
     (
@@ -61,7 +68,7 @@ macro_rules! impl_handler {
             $ty : 'static, 
         )*
          {
-            fn new(&self, injector :Injector) -> $last {
+            fn new(&self, injector : &Injector) -> $last {
                 $(
                     let $ty = injector.get_instance::<$ty>().unwrap().clone();
                 )*
@@ -106,7 +113,7 @@ pub struct BindTo<T : ?Sized> {
 }
 
 impl<T:?Sized> BindTo<T> {
-    pub fn to_provider( & self,  f : fn(&Injector) -> T) where T : 'static  {
+    pub fn to_provider<F>( & self,  f : F) where T : 'static, F : Fn(&Injector) -> T + 'static {
 
         let prov : BoxedProvider = BoxedProvider(Box::new(f));
 
@@ -115,6 +122,10 @@ impl<T:?Sized> BindTo<T> {
         m.insert(self.typeId, prov);
 
     }
+
+    pub fn to_constructor<A,C>(&self , c : C) where C : Constructor<A,T> + 'static, T : Sized + 'static {
+       self.to_provider(move |i| c.new(i))
+    } 
 }
 
 pub trait AbstractModule {
