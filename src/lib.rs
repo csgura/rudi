@@ -3,16 +3,15 @@ use std::{sync::{Arc, Mutex}, collections::HashMap, any::{Any, TypeId}, marker::
 mod implements;
 
 
-pub trait Provider {
-    type ProvidedType;
+pub trait Provider<T> {
 
-    fn provide(&self,  injector : &Injector ) -> Self::ProvidedType;
+    fn provide(&self,  injector : &Injector ) -> T;
 }
 
 #[derive(Clone)]
 pub struct Injector {
     binds : Binder ,
-    instances : Arc<Mutex<HashMap<String,Box<dyn Any>>>> ,
+    instances : Arc<Mutex<HashMap<TypeId,Box<dyn Any>>>> ,
 
 }
 
@@ -38,21 +37,32 @@ impl Binder {
     }
 }
 
-impl<T,F> Provider for F
+impl<T,F> Provider<T> for F
 where
-    F: Fn(&Injector) -> T,
+    F: for<'a> Fn(&'a Injector) -> T,
 {
-    type ProvidedType = T;
-    fn provide(&self,  injector : &Injector ) -> Self::ProvidedType {
+    fn provide(&self,  injector : &Injector ) -> T {
         self(injector)
     }
 
 }
 
+
 pub trait Constructor<A,R> {
     fn new(&self, injector : &Injector) -> R;
 }
 
+struct ConstructorProvider<A,T,C : Constructor<A,T>> {
+    constructor : C, 
+    pa : PhantomData<A>,
+    pt : PhantomData<T>
+} 
+
+impl <A,T,C> Provider<T> for ConstructorProvider<A,T,C> where C : Constructor<A,T>{
+    fn provide(&self,  injector : &Injector ) -> T {
+        self.constructor.new(injector)
+    }
+}
 // impl<A,T,C> Provider for C where 
 // C : Constructor<A,T> {
 //     type ProvidedType = T;
@@ -109,7 +119,7 @@ all_the_tuples!(impl_handler);
 
 
 
-struct BoxedProvider(Box<dyn Any>);
+
 
 pub struct BindTo<T : ?Sized> {
     binder : Binder,
@@ -118,9 +128,9 @@ pub struct BindTo<T : ?Sized> {
 }
 
 impl<T:?Sized> BindTo<T> {
-    pub fn to_provider<F>( & self,  f : F) where T : 'static, F : Fn(&Injector) -> T + 'static {
+    pub fn to_provider<P>( & self,  p : P) where T : 'static + Sized , P : Provider<T> + 'static{
 
-        let prov : BoxedProvider = BoxedProvider(Box::new(f));
+        let prov : BoxedProvider = BoxedProvider(Box::new(p));
 
         let mut m = self.binder.binds.lock().unwrap();
         
@@ -128,8 +138,10 @@ impl<T:?Sized> BindTo<T> {
 
     }
 
-    pub fn to_constructor<A,C>(&self , c : C) where C : Constructor<A,T> + 'static, T : Sized + 'static {
-       self.to_provider(move |i| c.new(i))
+    pub fn to_constructor<A,C>(&self , c : C) where C : Constructor<A,T> + 'static, T : Sized + 'static, A : 'static {
+        let p : ConstructorProvider<A, T, C> = ConstructorProvider { constructor : c, pa : PhantomData, pt : PhantomData};
+
+       self.to_provider(p)
     } 
 }
 
@@ -137,21 +149,43 @@ pub trait AbstractModule {
     fn config(&self, binder : &mut Binder );
 }
 
+struct BoxedProvider(Box<dyn Any>);
+
+impl BoxedProvider {
+    fn downcast<T:'static>(&self) -> Option<&Box<dyn Provider<T>>> {
+        self.0.downcast_ref::<Box<dyn Provider<T>>>()
+    }
+}
+
+
 impl Injector {
-    // pub fn get_instance<T>( &self, name : &str ) -> Option<Arc<T>> where T : 'static{
+    pub fn get_instance_by_name<T>( &self, name : &str ) -> Option<Arc<T>> where T : 'static{
 
-    //     let m = self.instances.lock().unwrap();
+        let m = self.instances.lock().unwrap();
 
-    //     let ret = m.get(name);
-    //     let ret = ret.and_then(|x| {
-    //          x.downcast_ref::<Box<dyn Singleton<ProvidedType = T>>>()
-    //     }).map(|x|x.get());
+        let tid = TypeId::of::<T>();
+        let ret = m.get(&tid);
+        let ret = ret.and_then(|x| {
+             x.downcast_ref::<Box<dyn Singleton<ProvidedType = T>>>()
+        }).map(|x|x.get());
 
-    //     ret
+        ret
 
-    // } 
+    } 
 
     pub fn get_instance<T>( &self) -> Option<Arc<T>> where T : 'static{
-        todo!();
+        let typeid = TypeId::of::<T>();
+        {
+            let binder = self.binds.binds.lock().unwrap();
+
+            let bind = binder.get(&typeid);
+
+            let ret = bind.map(|p| p.downcast::<T>());
+
+        
+            
+        }
+
+        todo!()
     }
 }

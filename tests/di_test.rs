@@ -28,9 +28,9 @@ fn new_hello( a : Arc<String>, b : Arc<u32> ) -> Arc<dyn Hello> {
 
 impl AbstractModule for HelloModule {
     fn config( &self, binder : &mut rudi::Binder ) {
-        binder.bind::<Arc<dyn Hello>>().to_provider(|i| {
-            Arc::new(HelloWorld{})
-        });
+        // binder.bind::<Arc<dyn Hello>>().to_provider(|i| {
+        //     Arc::new(HelloWorld{})
+        // });
 
         binder.bind::<Arc<dyn Hello>>().to_constructor(new_hello);
     }
