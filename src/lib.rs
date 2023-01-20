@@ -1,5 +1,6 @@
 use std::{sync::{Arc, Mutex}, collections::HashMap, any::{Any, TypeId}, marker::PhantomData};
 
+mod implements;
 
 
 pub trait Provider {
@@ -10,7 +11,7 @@ pub trait Provider {
 
 #[derive(Clone)]
 pub struct Injector {
-    binds : Arc<Mutex<HashMap<String,Box<dyn Any>>>> ,
+    binds : Binder ,
     instances : Arc<Mutex<HashMap<String,Box<dyn Any>>>> ,
 
 }
@@ -21,13 +22,17 @@ trait Singleton {
 
 }
 
-#[derive(Clone)]
+#[derive(Clone,Default)]
 pub struct Binder {
     binds : Arc<Mutex<HashMap<TypeId,BoxedProvider>>> ,
 }
 
 
 impl Binder {
+    pub fn new() -> Binder {
+        return Binder::default();
+    }
+
     pub fn bind<T>(&self ) -> BindTo<T> where T: 'static  {
         BindTo {  binder : self.clone(), typeId: TypeId::of::<T>(), phantom: PhantomData }
     }
@@ -129,7 +134,7 @@ impl<T:?Sized> BindTo<T> {
 }
 
 pub trait AbstractModule {
-    fn config( binder : &mut Binder );
+    fn config(&self, binder : &mut Binder );
 }
 
 impl Injector {
