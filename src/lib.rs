@@ -59,11 +59,22 @@ struct ConstructorProvider<A,T,C : Constructor<A,T>> {
     pt : PhantomData<T>
 } 
 
+
+
 impl <A,T,C> Provider<T> for ConstructorProvider<A,T,C> where C : Constructor<A,T>{
     fn provide(&self,  injector : &Injector ) -> T {
         self.constructor.new(injector)
     }
 }
+
+struct SingletonProvider<T:Clone>(T);
+
+impl <T:Clone> Provider<T> for SingletonProvider<T> {
+    fn provide(&self,  injector : &Injector ) -> T {
+        self.0.clone()
+    }
+}
+
 // impl<A,T,C> Provider for C where 
 // C : Constructor<A,T> {
 //     type ProvidedType = T;
@@ -152,6 +163,13 @@ impl<T:?Sized> BindTo<T> {
         
     }
 
+    pub fn to_singleton(&self , single : T) where T : 'static + Clone {
+        let p = SingletonProvider(single);
+
+        let b : Arc<dyn Provider<T>> = Arc::new(p);
+
+       self.to_provider_dyn(b)
+    } 
 
     pub fn to_constructor<A,C>(&self , c : C) where C : Constructor<A,T> + 'static, T : Sized + 'static, A : 'static {
         let p : ConstructorProvider<A, T, C> = ConstructorProvider { constructor : c, pa : PhantomData, pt : PhantomData};

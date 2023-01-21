@@ -12,6 +12,19 @@ trait Hello {
     fn hello(&self) -> String;
 }
 
+trait Dep1 {
+    fn message(&self) -> String;
+}
+
+struct Dep1Impl {
+    msg : String
+} 
+
+impl Dep1 for Dep1Impl {
+    fn message(&self) -> String {
+        self.msg.clone()
+    }
+}
 
 struct HelloWorld {
 
@@ -22,7 +35,8 @@ impl Hello for HelloWorld {
     }
 }
 
-fn new_hello( ) -> Arc<dyn Hello> {
+fn new_hello( d1 : Arc<dyn Dep1> ) -> Arc<dyn Hello> {
+    println!("d1.msg = {}", d1.message());
     Arc::new(HelloWorld{})
 }
 
@@ -32,6 +46,7 @@ impl AbstractModule for HelloModule {
         //     Arc::new(HelloWorld{})
         // });
 
+        binder.bind::<Arc<dyn Dep1>>().to_singleton(Arc::new(Dep1Impl{msg : "hello".into()}));
         binder.bind::<Arc<dyn Hello>>().to_constructor(new_hello);
     }
 } 
