@@ -62,4 +62,8 @@ fn bind_test() {
     let ins = i.get_instance::<Arc<dyn Hello>>();
 
     assert_eq!(ins.is_some(), true);
+
+    let ins = i.get_instance::<Arc<dyn Hello>>();
+
+    assert_eq!(ins.is_some(), true);
 }
