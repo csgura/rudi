@@ -131,9 +131,16 @@ pub struct BindTo<T : ?Sized> {
 impl<T:?Sized> BindTo<T> {
     pub fn to_provider<P>( & self,  p : P) where T : 'static + Sized , P : Provider<T> + 'static{
 
+        //let pp : Arc<dyn Provider<T>> = Arc::new(p);
+
+        let tid = TypeId::of::<Arc<dyn Provider<T>>>();
+        let t2 = TypeId::of::<dyn Provider<T>>();
+        let t3 = TypeId::of::<P>();
+        let t4 = TypeId::of::<Arc<P>>();
+
         let prov : BoxedProvider = BoxedProvider(Arc::new(p));
 
-        println!(" prov.type_id = {:?}", prov.0.type_id());
+        println!(" prov.type_id = {:?}, tid= {:?}, t2 = {:?}, t3 = {:?}, t4 = {:?}", prov.0.type_id(),tid, t2, t3,t4);
         let mut m = self.binder.binds.lock().unwrap();
         
         println!("insert type id = {:?}", self.typeId);
@@ -143,6 +150,12 @@ impl<T:?Sized> BindTo<T> {
 
     pub fn to_constructor<A,C>(&self , c : C) where C : Constructor<A,T> + 'static, T : Sized + 'static, A : 'static {
         let p : ConstructorProvider<A, T, C> = ConstructorProvider { constructor : c, pa : PhantomData, pt : PhantomData};
+
+        println!("type id = {:?}", TypeId::of::<Arc<ConstructorProvider<A,T,C>>>());
+        // let b : Box<dyn Any> = Box::new(p);
+        // println!("b typeid = {:?}", b.type_id());
+
+        // let p : ConstructorProvider<A, T, C> = ConstructorProvider { constructor : c, pa : PhantomData, pt : PhantomData};
 
        self.to_provider(p)
     } 
@@ -156,7 +169,7 @@ struct BoxedProvider(Arc<dyn Any>);
 
 impl BoxedProvider {
     fn downcast<T:'static>(&self) -> Option<Arc<dyn Provider<T>>> {
-        let typeid = TypeId::of::<dyn Provider<T>>();
+        let typeid = TypeId::of::<Arc<dyn Provider<T>>>();
         println!("downcast typeid = {:?}", typeid);
         self.0.downcast_ref::<Arc<dyn Provider<T>>>().map(|x|x.clone())
     }
