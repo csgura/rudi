@@ -2,6 +2,7 @@ use std::{sync::{Arc, Mutex}, collections::HashMap, any::{Any, TypeId}, marker::
 
 mod implements;
 
+pub use implements::Implements;
 
 pub trait Provider<T> {
 
@@ -78,14 +79,14 @@ macro_rules! impl_handler {
     ) => {
         #[allow(non_snake_case, unused_mut)]
         impl <F,$($ty,)* $last> Constructor<($($ty,)*), $last> for F 
-        where F : Fn($(Arc<$ty>,)*) -> $last,
+        where F : Fn($($ty,)*) -> $last,
         $(
             $ty : 'static, 
         )*
          {
             fn new(&self, injector : &Injector) -> $last {
                 $(
-                    let $ty = injector.get_instance::<$ty>().unwrap().clone();
+                    let $ty = injector.get_instance::<$ty>().unwrap();
                 )*
                 let res = self($($ty,)*);
                 res
@@ -130,10 +131,12 @@ pub struct BindTo<T : ?Sized> {
 impl<T:?Sized> BindTo<T> {
     pub fn to_provider<P>( & self,  p : P) where T : 'static + Sized , P : Provider<T> + 'static{
 
-        let prov : BoxedProvider = BoxedProvider(Box::new(p));
+        let prov : BoxedProvider = BoxedProvider(Arc::new(p));
 
+        println!(" prov.type_id = {:?}", prov.0.type_id());
         let mut m = self.binder.binds.lock().unwrap();
         
+        println!("insert type id = {:?}", self.typeId);
         m.insert(self.typeId, prov);
 
     }
@@ -149,11 +152,13 @@ pub trait AbstractModule {
     fn config(&self, binder : &mut Binder );
 }
 
-struct BoxedProvider(Box<dyn Any>);
+struct BoxedProvider(Arc<dyn Any>);
 
 impl BoxedProvider {
-    fn downcast<T:'static>(&self) -> Option<&Box<dyn Provider<T>>> {
-        self.0.downcast_ref::<Box<dyn Provider<T>>>()
+    fn downcast<T:'static>(&self) -> Option<Arc<dyn Provider<T>>> {
+        let typeid = TypeId::of::<dyn Provider<T>>();
+        println!("downcast typeid = {:?}", typeid);
+        self.0.downcast_ref::<Arc<dyn Provider<T>>>().map(|x|x.clone())
     }
 }
 
@@ -173,19 +178,23 @@ impl Injector {
 
     } 
 
-    pub fn get_instance<T>( &self) -> Option<Arc<T>> where T : 'static{
+    pub fn get_bind<T:'static >(&self) -> Option<Arc<dyn Provider<T>>> {
         let typeid = TypeId::of::<T>();
-        {
-            let binder = self.binds.binds.lock().unwrap();
+    
+        println!("get type id = {:?}", typeid);
 
-            let bind = binder.get(&typeid);
+        let binder = self.binds.binds.lock().unwrap();
 
-            let ret = bind.map(|p| p.downcast::<T>());
+        let bind = binder.get(&typeid);
 
-        
-            
-        }
+        println!("bind is some = {}", bind.is_some());
+        bind.and_then(|p| p.downcast::<T>().clone())
+    }
 
-        todo!()
+    pub fn get_instance<T>( &self) -> Option<T> where T : 'static{
+        let b = self.get_bind::<T>();
+
+        b.map(|x|x.provide(self))
+
     }
 }

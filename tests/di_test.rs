@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rudi::AbstractModule;
+use rudi::{AbstractModule, Implements};
 
 
 pub struct HelloModule {
@@ -39,6 +39,12 @@ impl AbstractModule for HelloModule {
 #[test]
 fn bind_test() {
 
+    let mut im = Implements::new();
+    im.add_implement("hello".into(), HelloModule{});
 
+    let i = im.new_injector(vec!["hello".into()]);
 
+    let ins = i.get_instance::<Arc<dyn Hello>>();
+
+    assert_eq!(ins.is_some(), true);
 }
