@@ -44,7 +44,6 @@ impl Implements {
 
         Injector  {
             binds : binder,
-            instances : Arc::new(Mutex::new(HashMap::new()))
         }
 
         

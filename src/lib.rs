@@ -12,8 +12,6 @@ pub trait Provider<T> {
 #[derive(Clone)]
 pub struct Injector {
     binds : Binder ,
-    instances : Arc<Mutex<HashMap<TypeId,Box<dyn Any>>>> ,
-
 }
 
 trait Singleton {
@@ -34,7 +32,8 @@ impl Binder {
     }
 
     pub fn bind<T>(&self ) -> BindTo<T> where T: 'static  {
-        BindTo {  binder : self.clone(), typeId: TypeId::of::<T>(), phantom: PhantomData }
+        let type_name = std::any::type_name::<T>().into();
+        BindTo {  binder : self.clone(), type_id: TypeId::of::<T>(), type_name, phantom: PhantomData }
     }
 }
 
@@ -135,7 +134,8 @@ all_the_tuples!(impl_handler);
 
 pub struct BindTo<T : ?Sized> {
     binder : Binder,
-    typeId : TypeId,
+    type_id : TypeId,
+    type_name : String,
     phantom : PhantomData<T>,
 }
 
@@ -153,11 +153,11 @@ impl<T:?Sized> BindTo<T> {
     // }
 
     pub fn to_provider_dyn( & self,  p : Arc<dyn Provider<T>> ) where T : 'static + Sized {
-        let prov : Binding = Binding::new(Arc::new(p));
+        let prov : Binding = Binding::new(self.type_name.clone(),  Arc::new(p));
 
         let mut m = self.binder.binds.lock().unwrap();
         
-        m.insert(self.typeId, prov);
+        m.insert(self.type_id, prov);
         
     }
 
@@ -184,14 +184,15 @@ pub trait AbstractModule {
 
 #[derive(Clone)]
 struct Binding{
+    type_name : String,
     provider : Arc<dyn Any>,
     instance : Arc<Mutex<Option<Arc<dyn Any>>>>
 }
 
 impl Binding {
 
-    fn new( provider : Arc<dyn Any>) -> Binding {
-        Binding { provider, instance: Arc::new(Mutex::new(None)) }
+    fn new( type_name : String , provider : Arc<dyn Any>) -> Binding {
+        Binding { type_name, provider, instance: Arc::new(Mutex::new(None)) }
     }
 
     fn downcast<T:'static>(&self) -> Option<Arc<dyn Provider<T>>> {
@@ -218,19 +219,7 @@ impl Binding {
 
 
 impl Injector {
-    pub fn get_instance_by_name<T>( &self, name : &str ) -> Option<Arc<T>> where T : 'static{
-
-        let m = self.instances.lock().unwrap();
-
-        let tid = TypeId::of::<T>();
-        let ret = m.get(&tid);
-        let ret = ret.and_then(|x| {
-             x.downcast_ref::<Box<dyn Singleton<ProvidedType = T>>>()
-        }).map(|x|x.get());
-
-        ret
-
-    } 
+   
 
     fn get_bind<T:'static >(&self) -> Option<Binding> {
         let typeid = TypeId::of::<T>();
