@@ -193,6 +193,10 @@ impl<T: ?Sized> BindTo<T> {
 
         let mut m = self.binder.binds.lock().unwrap();
 
+        if m.contains_key(&self.type_id) {
+            panic!("duplicated binding {}", self.type_name);
+        }
+
         m.insert(self.type_id, prov);
     }
 

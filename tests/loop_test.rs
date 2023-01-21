@@ -2,8 +2,6 @@ use std::sync::Arc;
 
 use rudi::{AbstractModule, Implements};
 
-struct LoopModule {}
-
 trait A {}
 
 trait B {}
@@ -32,6 +30,8 @@ fn new_C(c: Arc<dyn B>) -> Arc<dyn C> {
     Arc::new(CImpl {})
 }
 
+struct LoopModule {}
+
 impl AbstractModule for LoopModule {
     fn config(&self, binder: &mut rudi::Binder) {
         binder.bind::<Arc<dyn A>>().to_constructor(new_A);
@@ -49,4 +49,24 @@ fn loop_test() {
     let i = im.new_injector(vec!["hello".into()]);
 
     let ins = i.get_instance::<Arc<dyn C>>();
+}
+
+struct DupModule {}
+
+impl AbstractModule for DupModule {
+    fn config(&self, binder: &mut rudi::Binder) {
+        binder.bind::<Arc<dyn A>>().to_constructor(new_A);
+        binder.bind::<Arc<dyn A>>().to_constructor(new_A);
+    }
+}
+
+#[test]
+#[should_panic]
+fn dup_test() {
+    let mut im = Implements::new();
+    im.add_implement("hello".into(), DupModule {});
+
+    let i = im.new_injector(vec!["hello".into()]);
+
+    let ins = i.get_instance::<Arc<dyn A>>();
 }
