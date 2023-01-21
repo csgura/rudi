@@ -22,7 +22,7 @@ impl Hello for HelloWorld {
     }
 }
 
-fn new_hello( a : Arc<String>, b : Arc<u32> ) -> Arc<dyn Hello> {
+fn new_hello( ) -> Arc<dyn Hello> {
     Arc::new(HelloWorld{})
 }
 
