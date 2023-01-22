@@ -1,11 +1,14 @@
+use std::sync::Arc;
+
 use crate::Binder;
 
 pub trait AbstractModule {
     fn config(&self, binder: &mut Binder);
 }
 
+#[derive(Clone)]
 pub struct CombinedModule {
-    modules: Vec<Box<dyn AbstractModule>>,
+    modules: Vec<Arc<dyn AbstractModule>>,
 }
 
 impl AbstractModule for CombinedModule {
@@ -15,7 +18,7 @@ impl AbstractModule for CombinedModule {
 }
 
 impl CombinedModule {
-    pub fn new(modules: Vec<Box<dyn AbstractModule>>) -> CombinedModule {
+    pub fn new(modules: Vec<Arc<dyn AbstractModule>>) -> CombinedModule {
         CombinedModule { modules: modules }
     }
 }
@@ -23,6 +26,6 @@ impl CombinedModule {
 #[macro_export]
 macro_rules! combine_module {
     ($($m:expr),*) => {
-        $crate::CombinedModule::new(vec![$(Box::new($m),)*])
+        $crate::CombinedModule::new(vec![$(Arc::new($m),)*])
     };
 }
