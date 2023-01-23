@@ -58,6 +58,6 @@ impl Injector {
     {
         let b = self.get_bind::<T>();
 
-        b.map(|mut x| x.get_instance::<T>(self))
+        b.map(|x| x.get_instance::<T>(self))
     }
 }

@@ -1,7 +1,10 @@
-use std::{any::{Any, TypeId}, cell::RefCell, sync::Arc};
+use std::{
+    any::{Any, TypeId},
+    sync::Arc,
+};
 
 trait WidgetTrait {
-    fn demo(& self);
+    fn demo(&self);
 }
 
 fn example(widget: Arc<dyn Any>) {

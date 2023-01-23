@@ -96,7 +96,7 @@ fn combine_test() {
     assert_eq!(ins.is_some(), true);
 }
 
-fn DefaultModule(binder: &mut Binder) {
+fn default_module(binder: &mut Binder) {
     binder.bind::<Dep1Impl>().to_singleton(Dep1Impl {
         msg: "default".into(),
     });
@@ -104,7 +104,7 @@ fn DefaultModule(binder: &mut Binder) {
     binder.bind::<u32>().to_singleton(42);
 }
 
-fn OverrideModule(binder: &mut Binder) {
+fn override_module(binder: &mut Binder) {
     bind!(binder, Dep1Impl).to_singleton(Dep1Impl {
         msg: "override".into(),
     });
@@ -114,9 +114,9 @@ fn OverrideModule(binder: &mut Binder) {
 fn default_test() {
     let mut im = Implements::new();
 
-    let m = rudi::overridable_module!(BindFunc(DefaultModule));
+    let m = rudi::overridable_module!(BindFunc(default_module));
     im.add_implement("default".into(), m);
-    im.add_implement("override".into(), BindFunc(OverrideModule));
+    im.add_implement("override".into(), BindFunc(override_module));
 
     let i = im.new_injector(vec!["default".into(), "override".into()]);
 
@@ -129,4 +129,24 @@ fn default_test() {
 
     assert_eq!(ins.is_some(), true);
     assert_eq!(ins.unwrap(), 42);
+}
+
+fn hello_eager() -> Arc<dyn Hello> {
+    println!("hello eager");
+    Arc::new(HelloWorld {})
+}
+
+fn eager_module(binder: &mut Binder) {
+    bind!(binder, Arc<dyn Hello>)
+        .to_constructor(hello_eager)
+        .as_eager();
+}
+
+#[test]
+fn eager_test() {
+    let mut im = Implements::new();
+
+    im.add_implement("eager".into(), BindFunc(eager_module));
+
+    let _i = im.new_injector(vec!["eager".into()]);
 }

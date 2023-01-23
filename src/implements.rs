@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{AbstractModule, Binder, Injector};
 
@@ -41,9 +38,15 @@ impl Implements {
             }
         });
 
-        Injector {
+        let ret = Injector {
             binds: binder,
             loop_checker: Default::default(),
-        }
+        };
+
+        //let eager = ret.binds.get_eager_bindings();
+
+        //eager.into_iter().for_each(|b| b.get_instance(&ret));
+
+        ret
     }
 }

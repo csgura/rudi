@@ -35,6 +35,15 @@ impl Binder {
         }
     }
 
+    pub(crate) fn get_eager_bindings(&self) -> Vec<Binding> {
+        let m = self.binds.lock().unwrap();
+
+        m.iter()
+            .map(|t| t.1)
+            .filter(|b| b.is_eager)
+            .map(|b| b.clone())
+            .collect()
+    }
     pub(crate) fn merge(&mut self, other: &Binder) {
         let mut this_map = self.binds.lock().unwrap();
         let other_map = other.binds.lock().unwrap();
@@ -63,6 +72,22 @@ pub struct BindTo<T: ?Sized> {
     phantom: PhantomData<T>,
 }
 
+pub struct BindOption {
+    binder: Binder,
+    type_id: TypeId,
+}
+
+impl BindOption {
+    pub fn as_eager(self) -> BindOption {
+        {
+            let mut m = self.binder.binds.lock().unwrap();
+            let b = m.get_mut(&self.type_id);
+            b.into_iter().for_each(|b| b.set_as_eager())
+        }
+        self
+    }
+}
+
 impl<T: ?Sized> BindTo<T> {
     // pub fn to_provider<P>( & self,  p : P) where T : 'static + Sized , P : Provider<T> + 'static{
 
@@ -74,22 +99,32 @@ impl<T: ?Sized> BindTo<T> {
 
     // }
 
-    pub fn to_provider_dyn(&self, p: Arc<dyn Provider<T>>)
+    pub fn to_provider_dyn(self, p: Arc<dyn Provider<T>>) -> BindOption
     where
         T: 'static + Sized,
     {
-        let prov: Binding = Binding::new(self.type_name.clone(), Arc::new(p));
+        let binder = self.binder;
+        let type_name = self.type_name;
+        let type_id = self.type_id;
 
-        let mut m = self.binder.binds.lock().unwrap();
+        let prov: Binding = Binding::new(type_name.clone(), Arc::new(p));
 
-        if m.contains_key(&self.type_id) {
-            panic!("duplicated binding {}", self.type_name);
+        {
+            let mut m = binder.binds.lock().unwrap();
+
+            if m.contains_key(&type_id) {
+                panic!("duplicated binding {}", type_name);
+            }
+            m.insert(type_id, prov);
         }
 
-        m.insert(self.type_id, prov);
+        BindOption {
+            binder: binder,
+            type_id: type_id,
+        }
     }
 
-    pub fn to_singleton(&self, single: T)
+    pub fn to_singleton(self, single: T) -> BindOption
     where
         T: 'static + Clone,
     {
@@ -100,7 +135,7 @@ impl<T: ?Sized> BindTo<T> {
         self.to_provider_dyn(b)
     }
 
-    pub fn to_constructor<A, C>(&self, c: C)
+    pub fn to_constructor<A, C>(self, c: C) -> BindOption
     where
         C: Constructor<A, T> + 'static,
         T: Sized + 'static,

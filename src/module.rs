@@ -80,7 +80,7 @@ impl AbstractModule for OverridedModule {
 }
 
 impl OverridableModule {
-    fn with(&self, overrides: Vec<Arc<dyn AbstractModule>>) -> OverridedModule {
+    pub fn with(&self, overrides: Vec<Arc<dyn AbstractModule>>) -> OverridedModule {
         OverridedModule {
             overriden: self.overriden.clone(),
             overrides,

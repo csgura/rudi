@@ -37,16 +37,16 @@ where
 pub(crate) struct SingletonProvider<T: Clone>(pub(crate) T);
 
 impl<T: Clone> Provider<T> for SingletonProvider<T> {
-    fn provide(&self, injector: &Injector) -> T {
+    fn provide(&self, _injector: &Injector) -> T {
         self.0.clone()
     }
 }
 
-macro_rules! impl_handler {
+macro_rules! cons_provider {
     (
         [$($ty:ident),*], $last:ident
     ) => {
-        #[allow(non_snake_case, unused_mut)]
+        #[allow(non_snake_case, unused_mut,unused_variables)]
         impl <F,$($ty,)* $last> Constructor<($($ty,)*), $last> for F
         where F : Fn($($ty,)*) -> $last,
         $(
@@ -94,4 +94,4 @@ macro_rules! all_the_tuples {
     };
 }
 
-all_the_tuples!(impl_handler);
+all_the_tuples!(cons_provider);

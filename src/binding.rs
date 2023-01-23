@@ -10,14 +10,19 @@ pub(crate) struct Binding {
     type_name: String,
     provider: Arc<dyn Any>,
     instance: Arc<Mutex<Option<Arc<dyn Any>>>>,
+    pub(crate) is_eager: bool,
 }
 
 impl Binding {
+    pub(crate) fn set_as_eager(&mut self) {
+        self.is_eager = true;
+    }
     pub(crate) fn new(type_name: String, provider: Arc<dyn Any>) -> Binding {
         Binding {
             type_name,
             provider,
             instance: Arc::new(Mutex::new(None)),
+            is_eager: false,
         }
     }
 
@@ -27,7 +32,7 @@ impl Binding {
             .map(|x| x.clone())
     }
 
-    pub(crate) fn get_instance<T: 'static + Clone>(&mut self, injector: &Injector) -> T {
+    pub(crate) fn get_instance<T: 'static + Clone>(&self, injector: &Injector) -> T {
         if injector.loop_checker.visited.contains(&self.type_name) {
             panic!("loop detected. path = {}", injector.loop_checker.path());
         }

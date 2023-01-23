@@ -18,15 +18,15 @@ impl A for AImpl {}
 impl B for BImpl {}
 impl C for CImpl {}
 
-fn new_A(c: Arc<dyn C>) -> Arc<dyn A> {
+fn new_a(_c: Arc<dyn C>) -> Arc<dyn A> {
     Arc::new(AImpl {})
 }
 
-fn new_B(c: Arc<dyn A>) -> Arc<dyn B> {
+fn new_b(_c: Arc<dyn A>) -> Arc<dyn B> {
     Arc::new(BImpl {})
 }
 
-fn new_C(c: Arc<dyn B>) -> Arc<dyn C> {
+fn new_c(_c: Arc<dyn B>) -> Arc<dyn C> {
     Arc::new(CImpl {})
 }
 
@@ -34,9 +34,9 @@ struct LoopModule {}
 
 impl AbstractModule for LoopModule {
     fn config(&self, binder: &mut rudi::Binder) {
-        binder.bind::<Arc<dyn A>>().to_constructor(new_A);
-        binder.bind::<Arc<dyn B>>().to_constructor(new_B);
-        binder.bind::<Arc<dyn C>>().to_constructor(new_C);
+        binder.bind::<Arc<dyn A>>().to_constructor(new_a);
+        binder.bind::<Arc<dyn B>>().to_constructor(new_b);
+        binder.bind::<Arc<dyn C>>().to_constructor(new_c);
     }
 }
 
@@ -48,15 +48,15 @@ fn loop_test() {
 
     let i = im.new_injector(vec!["hello".into()]);
 
-    let ins = i.get_instance::<Arc<dyn C>>();
+    let _ins = i.get_instance::<Arc<dyn C>>();
 }
 
 struct DupModule {}
 
 impl AbstractModule for DupModule {
     fn config(&self, binder: &mut rudi::Binder) {
-        binder.bind::<Arc<dyn A>>().to_constructor(new_A);
-        binder.bind::<Arc<dyn A>>().to_constructor(new_A);
+        binder.bind::<Arc<dyn A>>().to_constructor(new_a);
+        binder.bind::<Arc<dyn A>>().to_constructor(new_a);
     }
 }
 
@@ -68,5 +68,5 @@ fn dup_test() {
 
     let i = im.new_injector(vec!["hello".into()]);
 
-    let ins = i.get_instance::<Arc<dyn A>>();
+    let _ins = i.get_instance::<Arc<dyn A>>();
 }
