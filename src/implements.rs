@@ -43,9 +43,9 @@ impl Implements {
             loop_checker: Default::default(),
         };
 
-        //let eager = ret.binds.get_eager_bindings();
+        let eager = ret.binds.get_eager_bindings();
 
-        //eager.into_iter().for_each(|b| b.get_instance(&ret));
+        eager.into_iter().for_each(|b| b.prepare_instance(&ret));
 
         ret
     }

@@ -9,7 +9,7 @@ use crate::{Injector, Provider};
 pub(crate) struct Binding {
     type_name: String,
     provider: Arc<dyn Any>,
-    instance: Arc<Mutex<Option<Arc<dyn Any>>>>,
+    instance: Arc<Mutex<Option<Box<dyn Any>>>>,
     pub(crate) is_eager: bool,
 }
 
@@ -26,13 +26,13 @@ impl Binding {
         }
     }
 
-    pub(crate) fn downcast<T: 'static>(&self) -> Option<Arc<dyn Provider<T>>> {
+    pub(crate) fn downcast(&self) -> Option<Arc<dyn Provider>> {
         self.provider
-            .downcast_ref::<Arc<dyn Provider<T>>>()
+            .downcast_ref::<Arc<dyn Provider>>()
             .map(|x| x.clone())
     }
 
-    pub(crate) fn get_instance<T: 'static + Clone>(&self, injector: &Injector) -> T {
+    pub(crate) fn prepare_instance(&self, injector: &Injector)  {
         if injector.loop_checker.visited.contains(&self.type_name) {
             panic!("loop detected. path = {}", injector.loop_checker.path());
         }
@@ -40,10 +40,10 @@ impl Binding {
         let mut guard = self.instance.lock().unwrap();
 
         if let Some(ret) = guard.as_ref() {
-            return ret.downcast_ref::<T>().unwrap().clone();
+            return;
         }
 
-        let p = self.downcast::<T>().unwrap();
+        let p = self.downcast().unwrap();
 
         let checked = Injector {
             binds: injector.binds.clone(),
@@ -52,8 +52,19 @@ impl Binding {
 
         let ins = p.provide(&checked);
 
-        *guard = Some(Arc::new(ins.clone()));
+        *guard = Some(ins);
+    }
 
-        ins
+    pub(crate) fn get_instance<T: 'static + Clone>(&self, injector: &Injector) -> T {
+        
+        self.prepare_instance(injector);
+        let mut guard = self.instance.lock().unwrap();
+
+
+        if let Some(ret) = guard.as_ref() {
+            return ret.downcast_ref::<T>().unwrap().clone();
+        } else {
+            panic!("impossible");
+        }
     }
 }

@@ -1,18 +1,9 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, any::Any};
 
 use crate::Injector;
 
-pub trait Provider<T> {
-    fn provide(&self, injector: &Injector) -> T;
-}
-
-impl<T, F> Provider<T> for F
-where
-    F: for<'a> Fn(&'a Injector) -> T,
-{
-    fn provide(&self, injector: &Injector) -> T {
-        self(injector)
-    }
+pub trait Provider {
+    fn provide(&self, injector: &Injector) -> Box<dyn Any>;
 }
 
 pub trait Constructor<A, R> {
@@ -25,20 +16,20 @@ pub(crate) struct ConstructorProvider<A, T, C: Constructor<A, T>> {
     pub(crate) pt: PhantomData<T>,
 }
 
-impl<A, T, C> Provider<T> for ConstructorProvider<A, T, C>
+impl<A, T:'static, C> Provider for ConstructorProvider<A, T, C>
 where
     C: Constructor<A, T>,
 {
-    fn provide(&self, injector: &Injector) -> T {
-        self.constructor.new(injector)
+    fn provide(&self, injector: &Injector) -> Box<dyn Any> {
+        Box::new(self.constructor.new(injector))
     }
 }
 
 pub(crate) struct SingletonProvider<T: Clone>(pub(crate) T);
 
-impl<T: Clone> Provider<T> for SingletonProvider<T> {
-    fn provide(&self, _injector: &Injector) -> T {
-        self.0.clone()
+impl<T: Clone + 'static> Provider for SingletonProvider<T> {
+    fn provide(&self, _injector: &Injector) -> Box<dyn Any> {
+        Box::new(self.0.clone())
     }
 }
 

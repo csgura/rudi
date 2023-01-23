@@ -99,7 +99,7 @@ impl<T: ?Sized> BindTo<T> {
 
     // }
 
-    pub fn to_provider_dyn(self, p: Arc<dyn Provider<T>>) -> BindOption
+    pub fn to_provider_dyn(self, p: Arc<dyn Provider>) -> BindOption
     where
         T: 'static + Sized,
     {
@@ -130,7 +130,7 @@ impl<T: ?Sized> BindTo<T> {
     {
         let p = SingletonProvider(single);
 
-        let b: Arc<dyn Provider<T>> = Arc::new(p);
+        let b: Arc<dyn Provider> = Arc::new(p);
 
         self.to_provider_dyn(b)
     }
@@ -147,7 +147,7 @@ impl<T: ?Sized> BindTo<T> {
             pt: PhantomData,
         };
 
-        let b: Arc<dyn Provider<T>> = Arc::new(p);
+        let b: Arc<dyn Provider> = Arc::new(p);
 
         self.to_provider_dyn(b)
     }
