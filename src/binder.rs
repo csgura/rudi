@@ -14,6 +14,7 @@ use crate::{
 #[derive(Clone, Default)]
 pub struct Binder {
     pub(crate) binds: Arc<Mutex<HashMap<TypeId, Binding>>>,
+    pub(crate) overridable: Arc<Mutex<HashMap<TypeId, Binding>>>,
 }
 
 impl Binder {
@@ -32,6 +33,26 @@ impl Binder {
             type_name,
             phantom: PhantomData,
         }
+    }
+
+    pub(crate) fn merge(&mut self, other: &Binder) {
+        let mut this_map = self.binds.lock().unwrap();
+        let other_map = other.binds.lock().unwrap();
+        other_map.iter().for_each(|(key, value)| {
+            if !this_map.contains_key(key) {
+                this_map.insert(key.clone(), value.clone());
+            }
+        })
+    }
+
+    pub(crate) fn merge_overridable(&mut self, other: &Binder) {
+        let mut this_map = self.overridable.lock().unwrap();
+        let other_map = other.binds.lock().unwrap();
+        other_map.iter().for_each(|(key, value)| {
+            if !this_map.contains_key(key) {
+                this_map.insert(key.clone(), value.clone());
+            }
+        })
     }
 }
 

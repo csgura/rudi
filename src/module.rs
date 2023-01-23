@@ -36,7 +36,9 @@ pub struct OverridableModule {
 
 impl AbstractModule for OverridableModule {
     fn config(&self, binder: &mut Binder) {
-        self.overriden.iter().for_each(|m| m.config(binder))
+        let mut ob = Binder::new();
+        self.overriden.iter().for_each(|m| m.config(&mut ob));
+        binder.merge_overridable(&ob);
     }
 }
 
@@ -47,7 +49,12 @@ pub struct OverridedModule {
 
 impl AbstractModule for OverridedModule {
     fn config(&self, binder: &mut Binder) {
-        todo!()
+        self.overrides.iter().for_each(|m| m.config(binder));
+
+        let mut ob = Binder::new();
+        self.overriden.iter().for_each(|m| m.config(&mut ob));
+
+        binder.merge(&ob);
     }
 }
 

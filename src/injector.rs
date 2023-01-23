@@ -29,6 +29,17 @@ pub struct Injector {
 }
 
 impl Injector {
+    fn get_overridable_bind<T: 'static>(&self) -> Option<Binding> {
+        let typeid = TypeId::of::<T>();
+
+        let binder = self.binds.overridable.lock().unwrap();
+
+        let bind = binder.get(&typeid);
+
+        bind.map(|x| x.clone())
+        //bind.and_then(|p| p.downcast::<T>().clone())
+    }
+
     fn get_bind<T: 'static>(&self) -> Option<Binding> {
         let typeid = TypeId::of::<T>();
 
@@ -37,6 +48,7 @@ impl Injector {
         let bind = binder.get(&typeid);
 
         bind.map(|x| x.clone())
+            .or_else(|| self.get_overridable_bind::<T>())
         //bind.and_then(|p| p.downcast::<T>().clone())
     }
 
