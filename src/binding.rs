@@ -39,7 +39,7 @@ impl Binding {
 
         let mut guard = self.instance.lock().unwrap();
 
-        if let Some(ret) = guard.as_ref() {
+        if let Some(_) = guard.as_ref() {
             return;
         }
 
@@ -58,8 +58,7 @@ impl Binding {
     pub(crate) fn get_instance<T: 'static + Clone>(&self, injector: &Injector) -> T {
         
         self.prepare_instance(injector);
-        let mut guard = self.instance.lock().unwrap();
-
+        let guard = self.instance.lock().unwrap();
 
         if let Some(ret) = guard.as_ref() {
             return ret.downcast_ref::<T>().unwrap().clone();
