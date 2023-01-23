@@ -7,6 +7,15 @@ pub trait AbstractModule {
 }
 
 #[derive(Clone)]
+pub struct BindFunc(pub fn(&mut Binder));
+
+impl AbstractModule for BindFunc {
+    fn config(&self, binder: &mut Binder) {
+        self.0(binder)
+    }
+}
+
+#[derive(Clone)]
 pub struct CombinedModule {
     modules: Vec<Arc<dyn AbstractModule>>,
 }
@@ -30,10 +39,22 @@ macro_rules! combine_module {
     };
 }
 
+#[macro_export]
+macro_rules! overridable_module {
+    ($($m:expr),*) => {
+        $crate::OverridableModule::new(vec![$(Arc::new($m),)*])
+    };
+}
+
 pub struct OverridableModule {
     overriden: Vec<Arc<dyn AbstractModule>>,
 }
 
+impl OverridableModule {
+    pub fn new(modules: Vec<Arc<dyn AbstractModule>>) -> OverridableModule {
+        OverridableModule { overriden: modules }
+    }
+}
 impl AbstractModule for OverridableModule {
     fn config(&self, binder: &mut Binder) {
         let mut ob = Binder::new();

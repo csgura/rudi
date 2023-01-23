@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rudi::{AbstractModule, Implements};
+use rudi::{bind, AbstractModule, BindFunc, Binder, Implements};
 
 pub struct HelloModule {}
 
@@ -12,6 +12,7 @@ trait Dep1 {
     fn message(&self) -> String;
 }
 
+#[derive(Clone)]
 struct Dep1Impl {
     msg: String,
 }
@@ -22,6 +23,7 @@ impl Dep1 for Dep1Impl {
     }
 }
 
+#[derive(Clone)]
 struct HelloWorld {}
 impl Hello for HelloWorld {
     fn hello(&self) -> String {
@@ -45,6 +47,9 @@ impl AbstractModule for HelloModule {
             .to_singleton(Arc::new(Dep1Impl {
                 msg: "hello".into(),
             }));
+
+        //bind_trait!(binder, Hello).to_constructor(new_hello);
+
         binder.bind::<Arc<dyn Hello>>().to_constructor(new_hello);
     }
 }
@@ -89,4 +94,39 @@ fn combine_test() {
     let ins = i.get_instance::<u32>();
 
     assert_eq!(ins.is_some(), true);
+}
+
+fn DefaultModule(binder: &mut Binder) {
+    binder.bind::<Dep1Impl>().to_singleton(Dep1Impl {
+        msg: "default".into(),
+    });
+
+    binder.bind::<u32>().to_singleton(42);
+}
+
+fn OverrideModule(binder: &mut Binder) {
+    bind!(binder, Dep1Impl).to_singleton(Dep1Impl {
+        msg: "override".into(),
+    });
+}
+
+#[test]
+fn default_test() {
+    let mut im = Implements::new();
+
+    let m = rudi::overridable_module!(BindFunc(DefaultModule));
+    im.add_implement("default".into(), m);
+    im.add_implement("override".into(), BindFunc(OverrideModule));
+
+    let i = im.new_injector(vec!["default".into(), "override".into()]);
+
+    let ins = i.get_instance::<Dep1Impl>();
+
+    assert_eq!(ins.is_some(), true);
+    assert_eq!(ins.unwrap().msg, String::from("override"));
+
+    let ins = i.get_instance::<u32>();
+
+    assert_eq!(ins.is_some(), true);
+    assert_eq!(ins.unwrap(), 42);
 }
