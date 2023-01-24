@@ -16,6 +16,7 @@ pub use module::OverridedModule;
 // pub use provider::ArcProvider;
 // pub use provider::ImplConstructor;
 pub use provider::ProviderAny;
+pub use provider::ProviderFunc;
 
 #[macro_export]
 macro_rules! bind {
@@ -30,3 +31,11 @@ macro_rules! bind_dyn {
         $e.bind::<Arc<dyn $ty>>()
     };
 }
+
+// #[macro_export]
+// macro_rules! bind_dyn_constructor {
+//     ($e:expr, $ty:tt, $cons:tt) => {
+//         $e.bind::<Arc<dyn $ty>>()
+//             .to_provider($crate::ProviderFunc(|i| Arc::new(i.inject_and_call($cons))))
+//     };
+// }

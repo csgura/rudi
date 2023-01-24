@@ -11,6 +11,31 @@ pub trait Provider {
     fn provide(&self, injector: &Injector) -> Self::Provided;
 }
 
+pub struct ProviderFunc<T>(pub fn(&Injector) -> T);
+impl<T> Provider for ProviderFunc<T> {
+    type Provided = T;
+
+    fn provide(&self, injector: &Injector) -> Self::Provided {
+        self.0(injector)
+    }
+}
+pub(crate) struct BoxedProvider<T, P>
+where
+    P: Provider<Provided = T>,
+{
+    pub(crate) p: P,
+}
+
+impl<T, P> ProviderAny for BoxedProvider<T, P>
+where
+    P: Provider<Provided = T>,
+    T: 'static,
+{
+    fn provide_any(&self, injector: &Injector) -> Box<dyn Any> {
+        Box::new(self.p.provide(injector))
+    }
+}
+
 pub trait Constructor<A, R> {
     fn new(&self, injector: &Injector) -> R;
 }

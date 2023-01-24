@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     binding::Binding,
-    provider::{Constructor, ConstructorProvider, SingletonProvider},
+    provider::{BoxedProvider, Constructor, ConstructorProvider, Provider, SingletonProvider},
     ProviderAny,
 };
 
@@ -89,16 +89,6 @@ impl BindOption {
 }
 
 impl<T: ?Sized> BindTo<T> {
-    // pub fn to_provider<P>( & self,  p : P) where T : 'static + Sized , P : Provider<T> + 'static{
-
-    //     let prov : BoxedProvider = BoxedProvider(Arc::new(p));
-
-    //     let mut m = self.binder.binds.lock().unwrap();
-
-    //     m.insert(self.typeId, prov);
-
-    // }
-
     pub fn to_provider_dyn(self, p: Arc<dyn ProviderAny>) -> BindOption
     where
         T: 'static + Sized,
@@ -152,4 +142,13 @@ impl<T: ?Sized> BindTo<T> {
         self.to_provider_dyn(b)
     }
 
+    pub fn to_provider<P>(self, p: P) -> BindOption
+    where
+        T: 'static + Sized,
+        P: Provider<Provided = T> + 'static,
+    {
+        let b: Arc<dyn ProviderAny> = Arc::new(BoxedProvider { p });
+
+        self.to_provider_dyn(b)
+    }
 }

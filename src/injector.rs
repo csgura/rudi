@@ -1,6 +1,6 @@
 use std::{any::TypeId, collections::HashSet};
 
-use crate::{binding::Binding, Binder};
+use crate::{binding::Binding, provider::Constructor, Binder};
 
 #[derive(Clone, Default)]
 pub(crate) struct LoopChecker {
@@ -59,5 +59,12 @@ impl Injector {
         let b = self.get_bind::<T>();
 
         b.map(|x| x.get_instance::<T>(self))
+    }
+
+    pub fn inject_and_call<A, R, C>(&self, c: C) -> R
+    where
+        C: Constructor<A, R>,
+    {
+        c.new(self)
     }
 }

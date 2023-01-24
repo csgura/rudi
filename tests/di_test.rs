@@ -54,6 +54,7 @@ impl AbstractModule for HelloModule {
             }));
 
         bind_dyn!(binder, Hello).to_constructor(new_hello);
+        //bind_dyn_constructor!(binder, Hello, new_hello);
 
         //binder.bind::<Arc<dyn Hello>>().to_constructor(new_hello);
     }
@@ -134,6 +135,8 @@ fn default_test() {
 
     assert_eq!(ins.is_some(), true);
     assert_eq!(ins.unwrap(), 42);
+
+    i.inject_and_call(|x: u32| println!("x is {}", x))
 }
 
 fn hello_eager() -> Arc<dyn Hello> {
