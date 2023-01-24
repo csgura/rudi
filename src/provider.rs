@@ -1,6 +1,6 @@
 use std::{any::Any, marker::PhantomData, sync::Arc};
 
-use crate::Injector;
+use crate::{Injector, Supplier};
 
 pub trait ProviderAny {
     fn provide_any(&self, injector: &Injector) -> Box<dyn Any>;
@@ -36,8 +36,44 @@ where
     }
 }
 
-pub trait Constructor<A, R> {
+pub trait Constructor<A, R>: Sized {
     fn new(&self, injector: &Injector) -> R;
+    fn map<R2>(self, f: fn(R) -> R2) -> ConstructorMap<A, Self, R, R2> {
+        ConstructorMap {
+            c: self,
+            f: f,
+            phantom_a: PhantomData,
+        }
+    }
+}
+
+pub struct ConstructorMap<A, C, R1, R2>
+where
+    C: Constructor<A, R1>,
+{
+    c: C,
+    f: fn(R1) -> R2,
+    phantom_a: PhantomData<A>,
+}
+
+impl<A, C: Constructor<A, R1>, R1, R2> Provider for ConstructorMap<A, C, R1, R2> {
+    type Provided = R2;
+
+    fn provide(&self, injector: &Injector) -> Self::Provided {
+        self.new(injector)
+    }
+}
+
+impl<A, C: Constructor<A, R1>, R1, R2> Supplier<R2> for ConstructorMap<A, C, R1, R2> {
+    fn get(&self, injector: &Injector) -> R2 {
+        self.new(injector)
+    }
+}
+
+impl<A, C: Constructor<A, R1>, R1, R2> Constructor<A, R2> for ConstructorMap<A, C, R1, R2> {
+    fn new(&self, injector: &Injector) -> R2 {
+        (self.f)(self.c.new(injector))
+    }
 }
 
 pub(crate) struct ConstructorProvider<A, T, C: Constructor<A, T>> {

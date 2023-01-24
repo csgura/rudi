@@ -13,11 +13,25 @@ pub use module::BindFunc;
 pub use module::CombinedModule;
 pub use module::OverridableModule;
 pub use module::OverridedModule;
+pub use provider::Constructor;
 // pub use provider::ArcProvider;
 // pub use provider::ImplConstructor;
 pub use provider::InterceptFunc;
+pub use provider::Provider;
 pub use provider::ProviderAny;
 pub use provider::ProviderFunc;
+
+pub trait Supplier<T> {
+    fn get(&self, injector: &Injector) -> T;
+}
+
+pub fn summon_constructor<A, R, C>(c: C) -> C
+where
+    C: Constructor<A, R>,
+{
+    c
+}
+
 #[macro_export]
 macro_rules! bind {
     ($e:expr, $ty:ty) => {
