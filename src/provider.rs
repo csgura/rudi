@@ -164,7 +164,7 @@ macro_rules! cons_provider {
          {
             fn new(&self, injector : &Injector) -> $last {
                 $(
-                    let $ty = injector.get_instance::<$ty>().unwrap();
+                    let $ty = injector.get_instance::<$ty>().expect(&format!("type {} not binded", std::any::type_name::<$ty>()));
                 )*
                 let res = self($($ty,)*);
                 res

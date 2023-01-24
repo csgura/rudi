@@ -56,7 +56,7 @@ impl Binding {
 
         let ins = ic
             .iter()
-            .fold(ins, |ins, b| b.provider.intercept_any(injector, ins));
+            .fold(ins, |ins, b| b.provider.intercept_any(&checked, ins));
 
         *guard = Some(ins);
     }

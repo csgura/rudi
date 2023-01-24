@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rudi::{AbstractModule, Implements};
+use rudi::{AbstractModule, BindFunc, Binder, Implements};
 
 trait A {}
 
@@ -69,4 +69,19 @@ fn dup_test() {
     let i = im.new_injector(vec!["hello".into()]);
 
     let _ins = i.get_instance::<Arc<dyn A>>();
+}
+
+fn not_binded_module(binder: &mut Binder) {
+    binder.bind::<Arc<dyn C>>().to_constructor(new_c);
+}
+
+#[test]
+#[should_panic]
+fn not_binded_test() {
+    let mut im = Implements::new();
+    im.add_implement("hello".into(), BindFunc(not_binded_module));
+
+    let i = im.new_injector(vec!["hello".into()]);
+
+    let _ins = i.get_instance::<Arc<dyn C>>();
 }
