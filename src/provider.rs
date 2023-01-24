@@ -80,6 +80,35 @@ impl<T: Clone + 'static> Provider for SingletonProvider<T> {
     }
 }
 
+pub trait InterceptProviderAny {
+    fn intercept_any(&self, injector: &Injector, ins: Box<dyn Any>) -> Box<dyn Any>;
+}
+
+pub trait InterceptProvider {
+    type Provided;
+
+    fn intercept(&self, injector: &Injector, ins: Self::Provided) -> Self::Provided;
+}
+
+pub struct InterceptFunc<T>(pub fn(&Injector, ins: T) -> T);
+impl<T> InterceptProvider for InterceptFunc<T> {
+    type Provided = T;
+
+    fn intercept(&self, injector: &Injector, ins: Self::Provided) -> Self::Provided {
+        self.0(injector, ins)
+    }
+}
+
+pub(crate) struct BoxedIntercept<T, P: InterceptProvider<Provided = T>>(pub(crate) P);
+
+impl<T: 'static, P: InterceptProvider<Provided = T>> InterceptProviderAny for BoxedIntercept<T, P> {
+    fn intercept_any(&self, injector: &Injector, ins: Box<dyn Any>) -> Box<dyn Any> {
+        let t = ins.downcast::<T>().unwrap();
+        let ret = self.0.intercept(injector, *t);
+        Box::new(ret)
+    }
+}
+
 // pub fn ImplConstructor<A, T, I, C>(c: C) -> ArcProvider<A, T, C>
 // where
 //     C: Constructor<A, T>,

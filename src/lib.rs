@@ -15,9 +15,9 @@ pub use module::OverridableModule;
 pub use module::OverridedModule;
 // pub use provider::ArcProvider;
 // pub use provider::ImplConstructor;
+pub use provider::InterceptFunc;
 pub use provider::ProviderAny;
 pub use provider::ProviderFunc;
-
 #[macro_export]
 macro_rules! bind {
     ($e:expr, $ty:ty) => {

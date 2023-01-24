@@ -6,15 +6,19 @@ use std::{
 };
 
 use crate::{
-    binding::Binding,
-    provider::{BoxedProvider, Constructor, ConstructorProvider, Provider, SingletonProvider},
-    ProviderAny,
+    binding::{Binding, InterceptBinding},
+    provider::{
+        BoxedIntercept, BoxedProvider, Constructor, ConstructorProvider, InterceptProvider,
+        InterceptProviderAny, Provider, SingletonProvider,
+    },
+    Injector, InterceptFunc, ProviderAny,
 };
 
 #[derive(Clone, Default)]
 pub struct Binder {
     pub(crate) binds: Arc<Mutex<HashMap<TypeId, Binding>>>,
     pub(crate) overridable: Arc<Mutex<HashMap<TypeId, Binding>>>,
+    pub(crate) intercepts: Arc<Mutex<HashMap<TypeId, Vec<InterceptBinding>>>>,
 }
 
 impl Binder {
@@ -28,6 +32,19 @@ impl Binder {
     {
         let type_name = std::any::type_name::<T>().into();
         BindTo {
+            binder: self.clone(),
+            type_id: TypeId::of::<T>(),
+            type_name,
+            phantom: PhantomData,
+        }
+    }
+
+    pub fn intercept<T>(&self) -> Intercept<T>
+    where
+        T: 'static,
+    {
+        let type_name = std::any::type_name::<T>().into();
+        Intercept {
             binder: self.clone(),
             type_id: TypeId::of::<T>(),
             type_name,
@@ -63,6 +80,12 @@ impl Binder {
             }
         })
     }
+
+    pub(crate) fn get_intercepts(&self, type_id: TypeId) -> Vec<InterceptBinding> {
+        let m = self.intercepts.lock().unwrap();
+        let l = m.get(&type_id);
+        l.map(|x| x.clone()).unwrap_or_default()
+    }
 }
 
 pub struct BindTo<T: ?Sized> {
@@ -97,7 +120,7 @@ impl<T: ?Sized> BindTo<T> {
         let type_name = self.type_name;
         let type_id = self.type_id;
 
-        let prov: Binding = Binding::new(type_name.clone(), Arc::new(p));
+        let prov: Binding = Binding::new(type_id, type_name.clone(), p);
 
         {
             let mut m = binder.binds.lock().unwrap();
@@ -150,5 +173,41 @@ impl<T: ?Sized> BindTo<T> {
         let b: Arc<dyn ProviderAny> = Arc::new(BoxedProvider { p });
 
         self.to_provider_dyn(b)
+    }
+}
+
+pub struct Intercept<T: ?Sized> {
+    binder: Binder,
+    type_id: TypeId,
+    type_name: String,
+    phantom: PhantomData<T>,
+}
+
+impl<T: 'static> Intercept<T> {
+    fn to_dyn(self, ip: Arc<dyn InterceptProviderAny>) {
+        let mut m = self.binder.intercepts.lock().unwrap();
+        let opt = m.get_mut(&self.type_id);
+        if let Some(l) = opt {
+            l.push(InterceptBinding {
+                type_name: self.type_name,
+                provider: ip,
+            })
+        } else {
+            m.insert(
+                self.type_id,
+                vec![InterceptBinding {
+                    type_name: self.type_name,
+                    provider: ip,
+                }],
+            );
+        }
+    }
+
+    pub fn to<P: 'static + InterceptProvider<Provided = T>>(self, ip: P) {
+        self.to_dyn(Arc::new(BoxedIntercept(ip)))
+    }
+
+    pub fn to_func(self, ip: fn(&Injector, T) -> T) {
+        self.to(InterceptFunc(ip))
     }
 }

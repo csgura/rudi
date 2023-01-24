@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rudi::{bind, bind_dyn, AbstractModule, BindFunc, Binder, Implements};
+use rudi::{bind, bind_dyn, AbstractModule, BindFunc, Binder, Implements, InterceptFunc};
 
 pub struct HelloModule {}
 
@@ -157,4 +157,35 @@ fn eager_test() {
     im.add_implement("eager".into(), BindFunc(eager_module));
 
     let _i = im.new_injector(vec!["eager".into()]);
+}
+
+struct HelloIntercept {
+    h: Arc<dyn Hello>,
+}
+
+impl Hello for HelloIntercept {
+    fn hello(&self) -> String {
+        println!("intercept hello");
+        self.h.hello()
+    }
+}
+
+fn intercept_module(binder: &mut Binder) {
+    binder
+        .intercept::<Arc<dyn Hello>>()
+        .to_func(|i, h| Arc::new(HelloIntercept { h }))
+}
+
+#[test]
+fn intercept_test() {
+    let mut im = Implements::new();
+    im.add_implement("hello".into(), HelloModule {});
+    im.add_implement("intercept".into(), BindFunc(intercept_module));
+
+    let i = im.new_injector(vec!["hello".into(), "intercept".into()]);
+
+    let ins = i.get_instance::<Arc<dyn Hello>>();
+
+    assert_eq!(ins.is_some(), true);
+    ins.unwrap().hello();
 }
