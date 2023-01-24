@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{Injector, Provider};
+use crate::{Injector, ProviderAny};
 
 #[derive(Clone)]
 pub(crate) struct Binding {
@@ -26,9 +26,9 @@ impl Binding {
         }
     }
 
-    pub(crate) fn downcast(&self) -> Option<Arc<dyn Provider>> {
+    pub(crate) fn downcast(&self) -> Option<Arc<dyn ProviderAny>> {
         self.provider
-            .downcast_ref::<Arc<dyn Provider>>()
+            .downcast_ref::<Arc<dyn ProviderAny>>()
             .map(|x| x.clone())
     }
 
@@ -50,7 +50,7 @@ impl Binding {
             loop_checker: injector.loop_checker.visit(self.type_name.clone()),
         };
 
-        let ins = p.provide(&checked);
+        let ins = p.provide_any(&checked);
 
         *guard = Some(ins);
     }

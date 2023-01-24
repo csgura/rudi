@@ -1,9 +1,14 @@
+use std::sync::Arc;
+
+trait Hello {
+
+}
 macro_rules! type_name {
-    ($ty:ty) => {
-        println!("type name = {}", std::any::type_name::<$ty>())
+    ($tt:tt) => {
+        println!("type name = {}", std::any::type_name::<Arc<dyn $tt>>())
     };
 }
 
 fn main() {
-    type_name!(String);
+    type_name!(Hello);
 }

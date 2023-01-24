@@ -8,7 +8,7 @@ use std::{
 use crate::{
     binding::Binding,
     provider::{Constructor, ConstructorProvider, SingletonProvider},
-    Provider,
+    ProviderAny,
 };
 
 #[derive(Clone, Default)]
@@ -99,7 +99,7 @@ impl<T: ?Sized> BindTo<T> {
 
     // }
 
-    pub fn to_provider_dyn(self, p: Arc<dyn Provider>) -> BindOption
+    pub fn to_provider_dyn(self, p: Arc<dyn ProviderAny>) -> BindOption
     where
         T: 'static + Sized,
     {
@@ -130,7 +130,7 @@ impl<T: ?Sized> BindTo<T> {
     {
         let p = SingletonProvider(single);
 
-        let b: Arc<dyn Provider> = Arc::new(p);
+        let b: Arc<dyn ProviderAny> = Arc::new(p);
 
         self.to_provider_dyn(b)
     }
@@ -147,8 +147,9 @@ impl<T: ?Sized> BindTo<T> {
             pt: PhantomData,
         };
 
-        let b: Arc<dyn Provider> = Arc::new(p);
+        let b: Arc<dyn ProviderAny> = Arc::new(p);
 
         self.to_provider_dyn(b)
     }
+
 }

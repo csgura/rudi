@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rudi::{bind, AbstractModule, BindFunc, Binder, Implements};
+use rudi::{bind, bind_dyn, AbstractModule, BindFunc, Binder, Implements};
 
 pub struct HelloModule {}
 
@@ -31,6 +31,11 @@ impl Hello for HelloWorld {
     }
 }
 
+// fn new_hello(d1: Arc<dyn Dep1>) -> HelloWorld {
+//     println!("d1.msg = {}", d1.message());
+//     HelloWorld {}
+// }
+
 fn new_hello(d1: Arc<dyn Dep1>) -> Arc<dyn Hello> {
     println!("d1.msg = {}", d1.message());
     Arc::new(HelloWorld {})
@@ -48,9 +53,9 @@ impl AbstractModule for HelloModule {
                 msg: "hello".into(),
             }));
 
-        //bind_trait!(binder, Hello).to_constructor(new_hello);
+        bind_dyn!(binder, Hello).to_constructor(new_hello);
 
-        binder.bind::<Arc<dyn Hello>>().to_constructor(new_hello);
+        //binder.bind::<Arc<dyn Hello>>().to_constructor(new_hello);
     }
 }
 

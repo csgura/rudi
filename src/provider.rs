@@ -1,9 +1,14 @@
-use std::{marker::PhantomData, any::Any};
+use std::{any::Any, marker::PhantomData, sync::Arc};
 
 use crate::Injector;
 
+pub trait ProviderAny {
+    fn provide_any(&self, injector: &Injector) -> Box<dyn Any>;
+}
+
 pub trait Provider {
-    fn provide(&self, injector: &Injector) -> Box<dyn Any>;
+    type Provided;
+    fn provide(&self, injector: &Injector) -> Self::Provided;
 }
 
 pub trait Constructor<A, R> {
@@ -16,22 +21,81 @@ pub(crate) struct ConstructorProvider<A, T, C: Constructor<A, T>> {
     pub(crate) pt: PhantomData<T>,
 }
 
-impl<A, T:'static, C> Provider for ConstructorProvider<A, T, C>
+impl<A, T: 'static, C> ProviderAny for ConstructorProvider<A, T, C>
 where
     C: Constructor<A, T>,
 {
-    fn provide(&self, injector: &Injector) -> Box<dyn Any> {
+    fn provide_any(&self, injector: &Injector) -> Box<dyn Any> {
         Box::new(self.constructor.new(injector))
+    }
+}
+
+impl<A, T: 'static, C> Provider for ConstructorProvider<A, T, C>
+where
+    C: Constructor<A, T>,
+{
+    type Provided = T;
+    fn provide(&self, injector: &Injector) -> Self::Provided {
+        self.constructor.new(injector)
     }
 }
 
 pub(crate) struct SingletonProvider<T: Clone>(pub(crate) T);
 
-impl<T: Clone + 'static> Provider for SingletonProvider<T> {
-    fn provide(&self, _injector: &Injector) -> Box<dyn Any> {
+impl<T: Clone + 'static> ProviderAny for SingletonProvider<T> {
+    fn provide_any(&self, _injector: &Injector) -> Box<dyn Any> {
         Box::new(self.0.clone())
     }
 }
+
+impl<T: Clone + 'static> Provider for SingletonProvider<T> {
+    type Provided = T;
+    fn provide(&self, _injector: &Injector) -> Self::Provided {
+        self.0.clone()
+    }
+}
+
+// pub fn ImplConstructor<A, T, I, C>(c: C) -> ArcProvider<A, T, C>
+// where
+//     C: Constructor<A, T>,
+//     I: T,
+// {
+//     ArcProvider {
+//         p: c,
+//         phantom_a: PhantomData,
+//         phantom_t: PhantomData,
+//     }
+// }
+
+// pub struct ArcProvider<A, T, P>
+// where
+//     P: Constructor<A, T>,
+// {
+//     p: P,
+//     phantom_a: PhantomData<A>,
+//     phantom_t: PhantomData<T>,
+// }
+
+// impl<A, T, P> Provider for ArcProvider<A, T, P>
+// where
+//     P: Constructor<A, T>,
+// {
+//     type Provided = Arc<T>;
+
+//     fn provide(&self, injector: &Injector) -> Self::Provided {
+//         Arc::new(self.p.new(injector))
+//     }
+// }
+
+// impl<A, T, P> ProviderAny for ArcProvider<A, T, P>
+// where
+//     P: Constructor<A, T>,
+//     T: 'static,
+// {
+//     fn provide_any(&self, injector: &Injector) -> Box<dyn Any> {
+//         Box::new(self.p.new(injector))
+//     }
+// }
 
 macro_rules! cons_provider {
     (
