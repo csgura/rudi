@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use rudi::{bind, bind_dyn, AbstractModule, BindFunc, Binder, Constructor, Implements};
+use rudi::{
+    bind, bind_dyn, bind_dyn_constructor, AbstractModule, BindFunc, Binder, Constructor, Implements,
+};
 
 pub struct HelloModule {}
 
@@ -46,11 +48,17 @@ fn new_hello(d1: Arc<dyn Dep1>) -> Arc<dyn Hello> {
     Arc::new(HelloWorld {})
 }
 
-fn cont_test() -> impl rudi::Supplier<Arc<dyn Hello>> {
-    let dc = rudi::summon_constructor(new_hello);
-    let dci = rudi::summon_constructor(new_hello_concrete).map::<Arc<dyn Hello>>(|x| Arc::new(x));
-    dci
+impl HelloWorld {
+    fn new(d1: Arc<dyn Dep1>) -> Self {
+        println!("d1.msg = {}", d1.message());
+        HelloWorld {}
+    }
 }
+// fn cont_test() -> impl rudi::Supplier<Arc<dyn Hello>> {
+//     let dc = rudi::summon_constructor(new_hello);
+//     let dci = rudi::summon_constructor(new_hello_concrete).map::<Arc<dyn Hello>>(|x| Arc::new(x));
+//     dci
+// }
 impl AbstractModule for HelloModule {
     fn config(&self, binder: &mut rudi::Binder) {
         // binder.bind::<Arc<dyn Hello>>().to_provider(|i| {
@@ -63,8 +71,9 @@ impl AbstractModule for HelloModule {
                 msg: "hello".into(),
             }));
 
-        bind_dyn!(binder, Hello).to_constructor(new_hello);
-        //bind_dyn_constructor!(binder, Hello, new_hello);
+        //bind_dyn!(binder, Hello).to_constructor(new_hello);
+        bind_dyn_constructor!(binder, Hello, HelloWorld::new);
+        //bind_dyn_constructor!(binder, Hello, new_hello_concrete);
 
         //binder.bind::<Arc<dyn Hello>>().to_constructor(new_hello);
     }

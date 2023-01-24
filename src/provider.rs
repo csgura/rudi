@@ -1,6 +1,6 @@
 use std::{any::Any, marker::PhantomData, sync::Arc};
 
-use crate::{Injector, Supplier};
+use crate::Injector;
 
 pub trait ProviderAny {
     fn provide_any(&self, injector: &Injector) -> Box<dyn Any>;
@@ -60,12 +60,6 @@ impl<A, C: Constructor<A, R1>, R1, R2> Provider for ConstructorMap<A, C, R1, R2>
     type Provided = R2;
 
     fn provide(&self, injector: &Injector) -> Self::Provided {
-        self.new(injector)
-    }
-}
-
-impl<A, C: Constructor<A, R1>, R1, R2> Supplier<R2> for ConstructorMap<A, C, R1, R2> {
-    fn get(&self, injector: &Injector) -> R2 {
         self.new(injector)
     }
 }

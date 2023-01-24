@@ -21,17 +21,6 @@ pub use provider::Provider;
 pub use provider::ProviderAny;
 pub use provider::ProviderFunc;
 
-pub trait Supplier<T> {
-    fn get(&self, injector: &Injector) -> T;
-}
-
-pub fn summon_constructor<A, R, C>(c: C) -> C
-where
-    C: Constructor<A, R>,
-{
-    c
-}
-
 #[macro_export]
 macro_rules! bind {
     ($e:expr, $ty:ty) => {
@@ -46,10 +35,21 @@ macro_rules! bind_dyn {
     };
 }
 
-// #[macro_export]
-// macro_rules! bind_dyn_constructor {
-//     ($e:expr, $ty:tt, $cons:tt) => {
-//         $e.bind::<Arc<dyn $ty>>()
-//             .to_provider($crate::ProviderFunc(|i| Arc::new(i.inject_and_call($cons))))
-//     };
-// }
+#[macro_export]
+macro_rules! bind_dyn_constructor {
+    ($e:expr, $ty:tt, $cons:tt) => {
+        $e.bind::<Arc<dyn $ty>>()
+            .to_provider($crate::ProviderFunc(|i| {
+                let ret: Arc<dyn $ty> = Arc::new(i.inject_and_call($cons));
+                ret
+            }))
+    };
+
+    ($e:expr, $ty:tt, $p:path) => {
+        $e.bind::<Arc<dyn $ty>>()
+            .to_provider($crate::ProviderFunc(|i| {
+                let ret: Arc<dyn $ty> = Arc::new(i.inject_and_call($p));
+                ret
+            }))
+    };
+}
