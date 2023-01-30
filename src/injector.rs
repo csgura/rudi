@@ -28,6 +28,8 @@ pub struct Injector {
     pub(crate) loop_checker: LoopChecker,
 }
 
+unsafe impl Send for Injector {}
+
 impl Injector {
     fn get_overridable_bind<T: 'static>(&self) -> Option<Binding> {
         let typeid = TypeId::of::<T>();
