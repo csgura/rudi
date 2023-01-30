@@ -7,9 +7,14 @@ pub trait AbstractModule {
 }
 
 #[derive(Clone)]
-pub struct BindFunc(pub fn(&mut Binder));
+pub struct BindFunc<F>(pub F)
+where
+    F: Fn(&mut Binder);
 
-impl AbstractModule for BindFunc {
+impl<F> AbstractModule for BindFunc<F>
+where
+    F: Fn(&mut Binder),
+{
     fn config(&self, binder: &mut Binder) {
         self.0(binder)
     }
