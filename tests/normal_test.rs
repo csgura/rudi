@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
-use rudi::{
-    bind, bind_dyn, bind_dyn_constructor, AbstractModule, BindFunc, Binder, Constructor, Implements,
-};
+use rudi::{bind, bind_dyn_constructor, AbstractModule, BindFunc, Binder, Implements};
 
 pub struct HelloModule {}
 
@@ -192,7 +190,7 @@ impl Hello for HelloIntercept {
 fn intercept_module(binder: &mut Binder) {
     binder
         .intercept::<Arc<dyn Hello>>()
-        .to_func(|i, h| Arc::new(HelloIntercept { h }))
+        .to_func(|_, h| Arc::new(HelloIntercept { h }))
 }
 
 #[test]

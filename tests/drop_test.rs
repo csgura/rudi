@@ -52,7 +52,7 @@ impl AbstractModule for MyModule {
     }
 }
 
-fn is_send<T: Send>(a: &T) {}
+fn is_send<T: Send>(_: &T) {}
 #[test]
 fn drop_test() {
     let mut i = Implements::new();

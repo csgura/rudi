@@ -74,6 +74,7 @@ impl Binding {
 }
 
 #[derive(Clone)]
+#[allow(dead_code)]
 pub(crate) struct InterceptBinding {
     pub(crate) type_name: String,
     pub(crate) provider: Arc<dyn InterceptProviderAny>,

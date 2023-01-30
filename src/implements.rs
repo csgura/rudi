@@ -4,7 +4,7 @@ use crate::{AbstractModule, Binder, Injector};
 
 #[derive(Default, Clone)]
 pub struct Implements {
-    anonymousModule: Vec<Arc<dyn AbstractModule>>,
+    anonymous_module: Vec<Arc<dyn AbstractModule>>,
     implements: HashMap<String, Arc<dyn AbstractModule>>,
 }
 
@@ -14,7 +14,7 @@ impl Implements {
     }
 
     pub fn add_bind<M: AbstractModule + 'static>(&mut self, module: M) {
-        self.anonymousModule.push(Arc::new(module));
+        self.anonymous_module.push(Arc::new(module));
     }
 
     pub fn add_implement<M: AbstractModule + 'static>(&mut self, name: String, module: M) {
@@ -38,7 +38,7 @@ impl Implements {
     pub fn new_injector(&self, enabled: Vec<String>) -> Injector {
         let mut binder = Binder::new();
 
-        for m in &self.anonymousModule {
+        for m in &self.anonymous_module {
             m.config(&mut binder);
         }
 
