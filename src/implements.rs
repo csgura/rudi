@@ -2,8 +2,9 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::{AbstractModule, Binder, Injector};
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Implements {
+    anonymousModule: Vec<Arc<dyn AbstractModule>>,
     implements: HashMap<String, Arc<dyn AbstractModule>>,
 }
 
@@ -11,6 +12,11 @@ impl Implements {
     pub fn new() -> Implements {
         Default::default()
     }
+
+    pub fn add_bind<M: AbstractModule + 'static>(&mut self, module: M) {
+        self.anonymousModule.push(Arc::new(module));
+    }
+
     pub fn add_implement<M: AbstractModule + 'static>(&mut self, name: String, module: M) {
         self.implements.insert(name, Arc::new(module));
     }
@@ -31,6 +37,10 @@ impl Implements {
 
     pub fn new_injector(&self, enabled: Vec<String>) -> Injector {
         let mut binder = Binder::new();
+
+        for m in &self.anonymousModule {
+            m.config(&mut binder);
+        }
 
         enabled.iter().for_each(|name| {
             if let Some(module) = self.implements.get(name) {
