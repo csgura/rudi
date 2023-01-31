@@ -1,4 +1,4 @@
-use std::{pin::Pin, time::Duration};
+use std::pin::Pin;
 
 use futures::{future::Shared, Future, FutureExt};
 use rudi::{bind, get_instance, AbstractModule, Implements};

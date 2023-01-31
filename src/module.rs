@@ -35,6 +35,12 @@ impl CombinedModule {
     pub fn new(modules: Vec<Arc<dyn AbstractModule>>) -> CombinedModule {
         CombinedModule { modules: modules }
     }
+
+    pub fn as_overridable(&self) -> OverridableModule {
+        OverridableModule {
+            overriden: self.modules.clone(),
+        }
+    }
 }
 
 #[macro_export]
@@ -59,7 +65,15 @@ impl OverridableModule {
     pub fn new(modules: Vec<Arc<dyn AbstractModule>>) -> OverridableModule {
         OverridableModule { overriden: modules }
     }
+
+    pub fn with(&self, overrides: Vec<Arc<dyn AbstractModule>>) -> OverridedModule {
+        OverridedModule {
+            overriden: self.overriden.clone(),
+            overrides,
+        }
+    }
 }
+
 impl AbstractModule for OverridableModule {
     fn config(&self, binder: &mut Binder) {
         let mut ob = Binder::new();
@@ -81,14 +95,5 @@ impl AbstractModule for OverridedModule {
         self.overriden.iter().for_each(|m| m.config(&mut ob));
 
         binder.merge(&ob);
-    }
-}
-
-impl OverridableModule {
-    pub fn with(&self, overrides: Vec<Arc<dyn AbstractModule>>) -> OverridedModule {
-        OverridedModule {
-            overriden: self.overriden.clone(),
-            overrides,
-        }
     }
 }
