@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
-use rudi::{bind, bind_dyn_constructor, AbstractModule, BindFunc, Binder, Implements};
+use rudi::{
+    bind, bind_dyn_constructor, get_instance, get_instance_dyn, intercept_dyn, AbstractModule,
+    BindFunc, Binder, Implements,
+};
 
-pub struct HelloModule {}
+pub struct HelloModule;
 
 trait Hello {
     fn hello(&self) -> String;
@@ -84,16 +87,16 @@ fn bind_test() {
 
     let i = im.new_injector(vec!["hello".into()]);
 
-    let ins = i.get_instance::<Arc<dyn Hello>>();
+    let ins = get_instance_dyn!(i, Hello);
 
     assert_eq!(ins.is_some(), true);
 
-    let ins = i.get_instance::<Arc<dyn Hello>>();
+    let ins = get_instance_dyn!(i, Hello);
 
     assert_eq!(ins.is_some(), true);
 }
 
-struct OtherModule {}
+struct OtherModule;
 
 impl AbstractModule for OtherModule {
     fn config(&self, binder: &mut rudi::Binder) {
@@ -105,16 +108,16 @@ impl AbstractModule for OtherModule {
 fn combine_test() {
     let mut im = Implements::new();
 
-    let m = rudi::combine_module!(HelloModule {}, OtherModule {});
+    let m = rudi::combine_module!(HelloModule, OtherModule);
     im.add_implement("hello".into(), m);
 
     let i = im.new_injector(vec!["hello".into()]);
 
-    let ins = i.get_instance::<Arc<dyn Hello>>();
+    let ins = get_instance_dyn!(i, Hello);
 
     assert_eq!(ins.is_some(), true);
 
-    let ins = i.get_instance::<u32>();
+    let ins = get_instance!(i, u32);
 
     assert_eq!(ins.is_some(), true);
 }
@@ -188,9 +191,7 @@ impl Hello for HelloIntercept {
 }
 
 fn intercept_module(binder: &mut Binder) {
-    binder
-        .intercept::<Arc<dyn Hello>>()
-        .to_func(|_, h| Arc::new(HelloIntercept { h }))
+    intercept_dyn!(binder, Hello).to_func(|_, h| Arc::new(HelloIntercept { h }))
 }
 
 #[test]
@@ -201,7 +202,7 @@ fn intercept_test() {
 
     let i = im.new_injector(vec!["hello".into(), "intercept".into()]);
 
-    let ins = i.get_instance::<Arc<dyn Hello>>();
+    let ins = get_instance_dyn!(i, Hello);
 
     assert_eq!(ins.is_some(), true);
     ins.unwrap().hello();

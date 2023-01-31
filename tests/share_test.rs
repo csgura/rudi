@@ -1,7 +1,7 @@
-use std::pin::Pin;
+use std::{pin::Pin, time::Duration};
 
 use futures::{future::Shared, Future, FutureExt};
-use rudi::{bind, AbstractModule, Implements};
+use rudi::{bind, get_instance, AbstractModule, Implements};
 
 struct FutureModule;
 
@@ -55,12 +55,20 @@ async fn share_test() {
     im.add_bind(FutureModule);
 
     let i = im.new_injector(Vec::new());
-    let h = i.get_instance::<Hello>().unwrap();
+    let h = get_instance!(i, Hello).unwrap();
 
     is_send(&h);
 
     assert_eq!(h.hello().await, String::from("Hello"));
 
-    // let f = async move { 6 };
+    // let f = async move {
+    //     tokio::time::sleep(Duration::from_secs(5)).await;
+    //     println!("after sleep");
+    //     6
+    // };
     // let s2 = f.shared();
+
+    // println!("val = {}", s2.clone().await);
+    // println!("val2 = {}", s2.clone().await);
+    // println!("val3 = {}", s2.clone().await);
 }

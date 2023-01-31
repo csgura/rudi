@@ -36,6 +36,13 @@ macro_rules! bind_dyn {
 }
 
 #[macro_export]
+macro_rules! intercept_dyn {
+    ($e:expr, $ty:tt) => {
+        $e.intercept::<Arc<dyn $ty>>()
+    };
+}
+
+#[macro_export]
 macro_rules! bind_dyn_constructor {
     ($e:expr, $ty:tt, $cons:tt) => {
         $e.bind::<Arc<dyn $ty>>()
@@ -51,5 +58,19 @@ macro_rules! bind_dyn_constructor {
                 let ret: Arc<dyn $ty> = Arc::new(i.inject_and_call($p));
                 ret
             }))
+    };
+}
+
+#[macro_export]
+macro_rules! get_instance {
+    ($e:expr, $ty:ty) => {
+        $e.get_instance::<$ty>()
+    };
+}
+
+#[macro_export]
+macro_rules! get_instance_dyn {
+    ($e:expr, $ty:tt) => {
+        $e.get_instance::<Arc<dyn $ty>>()
     };
 }
