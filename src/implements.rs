@@ -5,7 +5,7 @@ use crate::{AbstractModule, Binder, Injector};
 #[derive(Default, Clone)]
 pub struct Implements {
     anonymous_module: Vec<Arc<dyn AbstractModule>>,
-    implements: HashMap<String, Arc<dyn AbstractModule>>,
+    named_module: HashMap<String, Arc<dyn AbstractModule>>,
 }
 
 impl Implements {
@@ -17,21 +17,25 @@ impl Implements {
         self.anonymous_module.push(Arc::new(module));
     }
 
-    pub fn add_implement<M: AbstractModule + 'static>(&mut self, name: String, module: M) {
-        self.implements.insert(name, Arc::new(module));
+    pub fn add_implement<M: AbstractModule + 'static, S>(&mut self, name: S, module: M)
+    where
+        S: AsRef<str>,
+    {
+        self.named_module
+            .insert(String::from(name.as_ref()), Arc::new(module));
     }
 
     pub fn has_implement(&mut self, name: String) -> bool {
-        self.implements.contains_key(&name)
+        self.named_module.contains_key(&name)
     }
 
     pub fn get_implement(&mut self, name: String) -> Option<Arc<dyn AbstractModule>> {
-        return self.implements.get(&name).map(|x| x.clone());
+        return self.named_module.get(&name).map(|x| x.clone());
     }
 
     pub fn add_implements(&mut self, other: &Implements) {
-        other.implements.iter().for_each(|(key, value)| {
-            self.implements.insert(key.clone(), value.clone());
+        other.named_module.iter().for_each(|(key, value)| {
+            self.named_module.insert(key.clone(), value.clone());
         })
     }
 
@@ -43,8 +47,10 @@ impl Implements {
         }
 
         enabled.iter().for_each(|name| {
-            if let Some(module) = self.implements.get(name) {
+            if let Some(module) = self.named_module.get(name) {
                 module.config(&mut binder);
+            } else {
+                panic!("module {} not exists", name);
             }
         });
 

@@ -74,3 +74,14 @@ macro_rules! get_instance_dyn {
         $e.get_instance::<Arc<dyn $ty>>()
     };
 }
+
+#[macro_export]
+macro_rules! new_injector {
+    ($e:expr, $($name:expr),*) => {
+        $e.new_injector(vec![$(String::from($name),)*])
+    };
+
+    ($e:expr) => {
+        $e.new_injector(vec![])
+    };
+}

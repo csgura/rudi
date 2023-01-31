@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use rudi::{bind_dyn_constructor, get_instance_dyn, AbstractModule, BindFunc, Binder, Implements};
+use rudi::{
+    bind_dyn_constructor, get_instance_dyn, new_injector, AbstractModule, BindFunc, Binder,
+    Implements,
+};
 
 trait A {}
 
@@ -44,9 +47,9 @@ impl AbstractModule for LoopModule {
 #[should_panic]
 fn loop_test() {
     let mut im = Implements::new();
-    im.add_implement("hello".into(), LoopModule);
+    im.add_bind(LoopModule);
 
-    let i = im.new_injector(vec!["hello".into()]);
+    let i = new_injector!(im);
 
     let _ins = get_instance_dyn!(i, C);
 }
@@ -64,9 +67,9 @@ impl AbstractModule for DupModule {
 #[should_panic]
 fn dup_test() {
     let mut im = Implements::new();
-    im.add_implement("hello".into(), DupModule);
+    im.add_bind(DupModule);
 
-    let i = im.new_injector(vec!["hello".into()]);
+    let i = new_injector!(im);
 
     let _ins = get_instance_dyn!(i, A);
 }
@@ -79,9 +82,9 @@ fn not_binded_module(binder: &mut Binder) {
 #[should_panic]
 fn not_binded_test() {
     let mut im = Implements::new();
-    im.add_implement("hello".into(), BindFunc(not_binded_module));
+    im.add_bind(BindFunc(not_binded_module));
 
-    let i = im.new_injector(vec!["hello".into()]);
+    let i = new_injector!(im);
 
     let _ins = get_instance_dyn!(i, C);
 }

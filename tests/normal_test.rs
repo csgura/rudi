@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use rudi::{
-    bind, bind_dyn_constructor, get_instance, get_instance_dyn, intercept_dyn, AbstractModule,
-    BindFunc, Binder, Implements,
+    bind, bind_dyn_constructor, get_instance, get_instance_dyn, intercept_dyn, new_injector,
+    AbstractModule, BindFunc, Binder, Implements,
 };
 
 pub struct HelloModule;
@@ -83,9 +83,9 @@ impl AbstractModule for HelloModule {
 #[test]
 fn bind_test() {
     let mut im = Implements::new();
-    im.add_implement("hello".into(), HelloModule {});
+    im.add_implement("hello", HelloModule {});
 
-    let i = im.new_injector(vec!["hello".into()]);
+    let i = new_injector!(im, "hello");
 
     let ins = get_instance_dyn!(i, Hello);
 
@@ -109,9 +109,9 @@ fn combine_test() {
     let mut im = Implements::new();
 
     let m = rudi::combine_module!(HelloModule, OtherModule);
-    im.add_implement("hello".into(), m);
+    im.add_implement("hello", m);
 
-    let i = im.new_injector(vec!["hello".into()]);
+    let i = new_injector!(im, "hello");
 
     let ins = get_instance_dyn!(i, Hello);
 
@@ -141,10 +141,10 @@ fn default_test() {
     let mut im = Implements::new();
 
     let m = rudi::overridable_module!(BindFunc(default_module));
-    im.add_implement("default".into(), m);
-    im.add_implement("override".into(), BindFunc(override_module));
+    im.add_implement("default", m);
+    im.add_implement("override", BindFunc(override_module));
 
-    let i = im.new_injector(vec!["default".into(), "override".into()]);
+    let i = new_injector!(im, "default", "override");
 
     let ins = i.get_instance::<Dep1Impl>();
 
@@ -174,9 +174,9 @@ fn eager_module(binder: &mut Binder) {
 fn eager_test() {
     let mut im = Implements::new();
 
-    im.add_implement("eager".into(), BindFunc(eager_module));
+    im.add_implement("eager", BindFunc(eager_module));
 
-    let _i = im.new_injector(vec!["eager".into()]);
+    let _i = new_injector!(im, "eager");
 }
 
 struct HelloIntercept {
@@ -197,10 +197,10 @@ fn intercept_module(binder: &mut Binder) {
 #[test]
 fn intercept_test() {
     let mut im = Implements::new();
-    im.add_implement("hello".into(), HelloModule {});
-    im.add_implement("intercept".into(), BindFunc(intercept_module));
+    im.add_implement("hello", HelloModule {});
+    im.add_implement("intercept", BindFunc(intercept_module));
 
-    let i = im.new_injector(vec!["hello".into(), "intercept".into()]);
+    let i = new_injector!(im, "hello", "intercept");
 
     let ins = get_instance_dyn!(i, Hello);
 
