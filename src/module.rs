@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::Binder;
 
 pub trait AbstractModule {
@@ -22,7 +20,7 @@ where
 
 #[derive(Clone)]
 pub struct CombinedModule {
-    modules: Vec<Arc<dyn AbstractModule>>,
+    modules: Vec<std::sync::Arc<dyn AbstractModule>>,
 }
 
 impl AbstractModule for CombinedModule {
@@ -32,7 +30,7 @@ impl AbstractModule for CombinedModule {
 }
 
 impl CombinedModule {
-    pub fn new(modules: Vec<Arc<dyn AbstractModule>>) -> CombinedModule {
+    pub fn new(modules: Vec<std::sync::Arc<dyn AbstractModule>>) -> CombinedModule {
         CombinedModule { modules: modules }
     }
 
@@ -46,27 +44,27 @@ impl CombinedModule {
 #[macro_export]
 macro_rules! combine_module {
     ($($m:expr),*) => {
-        $crate::CombinedModule::new(vec![$(Arc::new($m),)*])
+        $crate::CombinedModule::new(vec![$(std::sync::Arc::new($m),)*])
     };
 }
 
 #[macro_export]
 macro_rules! overridable_module {
     ($($m:expr),*) => {
-        $crate::OverridableModule::new(vec![$(Arc::new($m),)*])
+        $crate::OverridableModule::new(vec![$(std::sync::Arc::new($m),)*])
     };
 }
 
 pub struct OverridableModule {
-    overriden: Vec<Arc<dyn AbstractModule>>,
+    overriden: Vec<std::sync::Arc<dyn AbstractModule>>,
 }
 
 impl OverridableModule {
-    pub fn new(modules: Vec<Arc<dyn AbstractModule>>) -> OverridableModule {
+    pub fn new(modules: Vec<std::sync::Arc<dyn AbstractModule>>) -> OverridableModule {
         OverridableModule { overriden: modules }
     }
 
-    pub fn with(&self, overrides: Vec<Arc<dyn AbstractModule>>) -> OverridedModule {
+    pub fn with(&self, overrides: Vec<std::sync::Arc<dyn AbstractModule>>) -> OverridedModule {
         OverridedModule {
             overriden: self.overriden.clone(),
             overrides,
@@ -83,8 +81,8 @@ impl AbstractModule for OverridableModule {
 }
 
 pub struct OverridedModule {
-    overriden: Vec<Arc<dyn AbstractModule>>,
-    overrides: Vec<Arc<dyn AbstractModule>>,
+    overriden: Vec<std::sync::Arc<dyn AbstractModule>>,
+    overrides: Vec<std::sync::Arc<dyn AbstractModule>>,
 }
 
 impl AbstractModule for OverridedModule {
