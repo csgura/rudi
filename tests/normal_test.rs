@@ -120,6 +120,9 @@ fn combine_test() {
     let ins = get_instance!(i, u32);
 
     assert_eq!(ins.is_some(), true);
+
+    let ins = get_instance!(i, Option<u32>);
+    assert_eq!(ins.is_some(), true);
 }
 
 fn default_module(binder: &mut Binder) {

@@ -182,6 +182,11 @@ impl<T: 'static, P: InterceptProvider<Provided = T>> InterceptProviderAny for Bo
 // }
 
 macro_rules! cons_provider {
+    (@get_instance $injector:expr, $ty:ty) => {
+        {
+            $injector.get_instance::<$ty>().expect(&format!("type {} not binded.", std::any::type_name::<$ty>()))
+        }
+    };
     (
         [$($ty:ident),*], $last:ident
     ) => {
@@ -194,7 +199,7 @@ macro_rules! cons_provider {
          {
             fn new(&self, injector : &Injector) -> $last {
                 $(
-                    let $ty = injector.get_instance::<$ty>().expect(&format!("type {} not binded", std::any::type_name::<$ty>()));
+                    let $ty = cons_provider!(@get_instance injector, $ty);
                 )*
                 let res = self($($ty,)*);
                 res

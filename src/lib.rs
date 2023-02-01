@@ -63,9 +63,12 @@ macro_rules! bind_dyn_constructor {
 
 #[macro_export]
 macro_rules! get_instance {
-    ($e:expr, $ty:ty) => {
+    ($e:expr, Option<$ty:ty>) => {{
         $e.get_instance::<$ty>()
-    };
+    }};
+    ($e:expr, $ty:ty) => {{
+        $e.get_instance::<$ty>()
+    }};
 }
 
 #[macro_export]
