@@ -16,6 +16,7 @@ pub(crate) struct Binding {
 
 impl Binding {
     pub(crate) fn set_as_eager(&mut self) {
+        //println!("set {} as eager", self.type_name);
         self.is_eager = true;
     }
     pub(crate) fn new(
@@ -30,6 +31,10 @@ impl Binding {
             instance: Arc::new(Mutex::new(None)),
             is_eager: false,
         }
+    }
+
+    pub fn type_name(&self) -> String {
+        self.type_name.clone()
     }
 
     pub(crate) fn prepare_instance(&self, injector: &Injector) {

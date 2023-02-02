@@ -61,7 +61,10 @@ impl Implements {
 
         let eager = ret.binds.get_eager_bindings();
 
-        eager.into_iter().for_each(|b| b.prepare_instance(&ret));
+        eager.into_iter().for_each(|b| {
+            println!("start eager singleton {}", b.type_name());
+            b.prepare_instance(&ret)
+        });
 
         ret
     }

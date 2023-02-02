@@ -54,12 +54,21 @@ impl Binder {
 
     pub(crate) fn get_eager_bindings(&self) -> Vec<Binding> {
         let m = self.binds.lock().unwrap();
+        let m2 = self.overridable.lock().unwrap();
 
-        m.iter()
+        let i1 = m
+            .iter()
             .map(|t| t.1)
             .filter(|b| b.is_eager)
-            .map(|b| b.clone())
-            .collect()
+            .map(|b| b.clone());
+
+        let i2 = m2
+            .iter()
+            .map(|t| t.1)
+            .filter(|b| b.is_eager)
+            .map(|b| b.clone());
+
+        i1.chain(i2).collect()
     }
     pub(crate) fn merge(&mut self, other: &Binder) {
         let mut this_map = self.binds.lock().unwrap();
