@@ -70,24 +70,60 @@ impl Binder {
 
         i1.chain(i2).collect()
     }
-    pub(crate) fn merge(&mut self, other: &Binder) {
-        let mut this_map = self.binds.lock().unwrap();
-        let other_map = other.binds.lock().unwrap();
-        other_map.iter().for_each(|(key, value)| {
-            if !this_map.contains_key(key) {
-                this_map.insert(key.clone(), value.clone());
+
+    pub(crate) fn add_interceptor(&mut self, type_id: TypeId, interceptor: InterceptBinding) {
+        let mut m = self.intercepts.lock().unwrap();
+        let opt = m.get_mut(&type_id);
+        match opt {
+            Some(list) => {
+                list.push(interceptor);
             }
-        })
+            None => {
+                m.insert(type_id, vec![interceptor]);
+            }
+        };
+    }
+
+    pub(crate) fn merge(&mut self, other: &Binder) {
+        {
+            let mut this_map = self.binds.lock().unwrap();
+            let other_map = other.binds.lock().unwrap();
+            other_map.iter().for_each(|(key, value)| {
+                if !this_map.contains_key(key) {
+                    this_map.insert(key.clone(), value.clone());
+                }
+            });
+        }
+        {
+            let other_map = other.intercepts.lock().unwrap();
+
+            other_map.iter().for_each(|(key, value)| {
+                value.iter().for_each(|i| {
+                    self.add_interceptor(key.clone(), i.clone());
+                })
+            });
+        }
     }
 
     pub(crate) fn merge_overridable(&mut self, other: &Binder) {
-        let mut this_map = self.overridable.lock().unwrap();
-        let other_map = other.binds.lock().unwrap();
-        other_map.iter().for_each(|(key, value)| {
-            if !this_map.contains_key(key) {
-                this_map.insert(key.clone(), value.clone());
-            }
-        })
+        {
+            let mut this_map = self.overridable.lock().unwrap();
+            let other_map = other.binds.lock().unwrap();
+            other_map.iter().for_each(|(key, value)| {
+                if !this_map.contains_key(key) {
+                    this_map.insert(key.clone(), value.clone());
+                }
+            })
+        }
+        {
+            let other_map = other.intercepts.lock().unwrap();
+
+            other_map.iter().for_each(|(key, value)| {
+                value.iter().for_each(|i| {
+                    self.add_interceptor(key.clone(), i.clone());
+                })
+            });
+        }
     }
 
     pub(crate) fn get_intercepts(&self, type_id: TypeId) -> Vec<InterceptBinding> {
